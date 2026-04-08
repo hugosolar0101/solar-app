@@ -1,45 +1,55 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { supabase } from "@/lib/supabaseClient"
+import Link from "next/link"
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { getCurrentUser, getUserRole } from "@/services/auth"
 
-export default function UsersAdmin() {
-  const [users, setUsers] = useState<any[]>([])
-
-  async function fetchUsers() {
-    const { data } = await supabase.from("profiles").select("*")
-    setUsers(data || [])
-  }
-
-  async function makeAdmin(id: string) {
-    await supabase.from("profiles").update({ role: "admin" }).eq("id", id)
-    fetchUsers()
-  }
-
-  async function makeUser(id: string) {
-    await supabase.from("profiles").update({ role: "user" }).eq("id", id)
-    fetchUsers()
-  }
+export default function AdminPage() {
+  const router = useRouter()
 
   useEffect(() => {
-    fetchUsers()
+    async function checkAdmin() {
+      const user = await getCurrentUser()
+
+      if (!user) {
+        router.push("/login")
+        return
+      }
+
+      const role = await getUserRole()
+
+      if (role !== "admin") {
+        router.push("/dashboard")
+      }
+    }
+
+    checkAdmin()
   }, [])
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl">Usuários</h1>
+    <div className="p-6 space-y-6">
+      <h1 className="text-3xl font-bold">Painel Administrativo</h1>
 
-      <ul>
-        {users.map((u) => (
-          <li key={u.id} className="flex justify-between">
-            {u.email} ({u.role})
-            <div>
-              <button onClick={() => makeAdmin(u.id)}>Admin</button>
-              <button onClick={() => makeUser(u.id)}>User</button>
-            </div>
-          </li>
-        ))}
-      </ul>
+      <div className="grid grid-cols-2 gap-4">
+
+        <Link href="/admin/inverters" className="p-4 bg-gray-100 rounded">
+          ⚡ Inversores
+        </Link>
+
+        <Link href="/admin/panels" className="p-4 bg-gray-100 rounded">
+          🔋 Placas
+        </Link>
+
+        <Link href="/admin/dimensioning" className="p-4 bg-gray-100 rounded">
+          📊 Dimensionamento
+        </Link>
+
+        <Link href="/admin/users" className="p-4 bg-gray-100 rounded">
+          👤 Usuários
+        </Link>
+
+      </div>
     </div>
   )
 }
