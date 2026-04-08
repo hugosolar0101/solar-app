@@ -33,22 +33,63 @@ export default function InvertersAdmin() {
 
   return (
     <div className="p-6 space-y-4">
+
+      {/* TÍTULO */}
       <h1 className="text-2xl font-bold">Inversores</h1>
 
-      <div className="flex gap-2">
-        <input placeholder="Marca" value={brand} onChange={(e) => setBrand(e.target.value)} />
-        <input placeholder="Modelo" value={model} onChange={(e) => setModel(e.target.value)} />
-        <button onClick={addInverter}>Adicionar</button>
+      {/* FORM */}
+      <div className="bg-white p-4 rounded shadow space-y-4">
+        <h2 className="text-xl font-semibold">Adicionar Inversor</h2>
+
+        <div className="flex gap-2">
+          <input
+            className="border p-2 rounded w-full"
+            placeholder="Marca"
+            value={brand}
+            onChange={(e) => setBrand(e.target.value)}
+          />
+
+          <input
+            className="border p-2 rounded w-full"
+            placeholder="Modelo"
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+          />
+
+          <button
+            className="bg-blue-600 text-white px-4 rounded"
+            onClick={addInverter}
+          >
+            Adicionar
+          </button>
+        </div>
       </div>
 
-      <ul>
+      {/* 🔥 LISTA (ERA ISSO QUE FALTAVA) */}
+      <div className="bg-white rounded shadow">
+        {inverters.length === 0 && (
+          <div className="p-4 text-gray-500">
+            Nenhum inversor cadastrado
+          </div>
+        )}
+
         {inverters.map((inv) => (
-          <li key={inv.id} className="flex justify-between">
-            {inv.brand} - {inv.model}
-            <button onClick={() => deleteInverter(inv.id)}>Excluir</button>
-          </li>
+          <div
+            key={inv.id}
+            className="flex justify-between p-3 border-b"
+          >
+            <span>{inv.brand} - {inv.model}</span>
+
+            <button
+              className="text-red-500"
+              onClick={() => deleteInverter(inv.id)}
+            >
+              Excluir
+            </button>
+          </div>
         ))}
-      </ul>
+      </div>
+
     </div>
   )
 }
