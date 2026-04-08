@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
+import { Card } from "@/components/admin/Card"
 
 export default function DimensioningAdmin() {
   const [dimensioning, setDimensioning] = useState<any[]>([])
@@ -58,6 +59,7 @@ export default function DimensioningAdmin() {
   }, [])
 
   return (
+    <Card>
     <div className="p-6 space-y-4">
 
       <h1 className="text-2xl font-bold">Dimensionamento</h1>
@@ -146,5 +148,6 @@ export default function DimensioningAdmin() {
       </div>
 
     </div>
+    </Card>
   )
 }
