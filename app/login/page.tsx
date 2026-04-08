@@ -3,22 +3,33 @@
 import { useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import { useRouter } from "next/navigation"
+import { getUserRole } from "@/services/auth"
 
 export default function Login() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const router = useRouter()
+  
 
-  async function handleLogin() {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+  const handleLogin = async () => {
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  })
 
-    if (error) return alert(error.message)
+  if (error) {
+    alert("Erro ao logar")
+    return
+  }
 
+  const role = await getUserRole()
+
+  if (role === "admin") {
+    router.push("/admin")
+  } else {
     router.push("/dashboard")
   }
+}
 
   async function handleRegister() {
     const { error } = await supabase.auth.signUp({
