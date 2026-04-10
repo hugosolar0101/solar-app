@@ -7,7 +7,6 @@ import { Card } from "@/components/admin/Card"
 export default function Dashboard() {
   const [inverters, setInverters] = useState<any[]>([])
   const [panels, setPanels] = useState<any[]>([])
-  //const [dimensioning, setDimensioning] = useState<any[]>([])
 
   const [selectedInverterBrand, setSelectedInverterBrand] = useState("")
   const [selectedInverterModel, setSelectedInverterModel] = useState("")
@@ -16,65 +15,53 @@ export default function Dashboard() {
   const [selectedPanelModel, setSelectedPanelModel] = useState("")
 
   const [result, setResult] = useState<number | null>(null)
+  const [hasCalculated, setHasCalculated] = useState(false)
 
-  // 🔹 BUSCAR DADOS DO SUPABASE
+  // 🔹 BUSCAR DADOS
   async function fetchData() {
-  //const { data: inv, error: err1 } = await supabase.from("inverters").select("*")
-  //const { data: pan, error: err2 } = await supabase.from("panels").select("*")
-  const [{ data: inv }, { data: pan }] =
-    await Promise.all([
+    const [{ data: inv }, { data: pan }] = await Promise.all([
       supabase.from("inverters").select("*"),
       supabase.from("panels").select("*"),
     ])
 
-  setInverters(inv || [])
-  setPanels(pan || [])
-  //const { data: dim, error: err3 } = await supabase.from("dimensioning").select("*")
-
-  //console.log("INVERSORES:", inv, err1)
-  //console.log("PLACAS:", pan, err2)
-  //console.log("DIMENSIONAMENTO:", dim, err3)
-
-  setInverters(inv || [])
-  setPanels(pan || [])
-  //setDimensioning(dim || [])
-}
+    setInverters(inv || [])
+    setPanels(pan || [])
+  }
 
   useEffect(() => {
     fetchData()
   }, [])
 
-  /*async function fetchData() {
-  const [{ data: inv }, { data: pan }] =
-    await Promise.all([
-      supabase.from("inverters").select("*"),
-      supabase.from("panels").select("*"),
-    ])
-
-  setInverters(inv || [])
-  setPanels(pan || [])
-}*/
-
-  async function calculate(inverterId: string, panelId: string) {
-  const { data } = await supabase
-    .from("dimensioning")
-    .select("max_quantity")
-    .eq("inverter_id", inverterId)
-    .eq("panel_id", panelId)
-    .single()
-
-  if (!data) {
+  // 🔹 RESET CENTRAL
+  function resetResult() {
     setResult(null)
-  } else {
-    setResult(data.max_quantity)
+    setHasCalculated(false)
   }
-}
 
-  // 🔹 LISTAS DE MARCAS
+  // 🔹 CALCULAR (APENAS AO CLICAR)
+  async function handleCalculate() {
+    if (!selectedInverterObj || !selectedPanelObj) return
+
+    setHasCalculated(true)
+
+    const { data } = await supabase
+      .from("dimensioning")
+      .select("max_quantity")
+      .eq("inverter_id", selectedInverterObj.id)
+      .eq("panel_id", selectedPanelObj.id)
+      .maybeSingle()
+
+    if (!data) {
+      setResult(null)
+    } else {
+      setResult(data.max_quantity)
+    }
+  }
+
+  // 🔹 LISTAS
   const inverterBrands = [...new Set(inverters.map(i => i.brand))]
   const panelBrands = [...new Set(panels.map(p => p.brand))]
 
-  // 🔹 FILTROS
   const filteredInverters = inverters.filter(
     (i) => i.brand === selectedInverterBrand
   )
@@ -83,7 +70,7 @@ export default function Dashboard() {
     (p) => p.brand === selectedPanelBrand
   )
 
-  // 🔹 PEGAR OBJETOS SELECIONADOS
+  // 🔹 SELECIONADOS
   const selectedInverterObj = inverters.find(
     (i) =>
       i.brand === selectedInverterBrand &&
@@ -96,46 +83,20 @@ export default function Dashboard() {
       p.model === selectedPanelModel
   )
 
-  // 🔥 CALCULAR AUTOMATICAMENTE
- /* useEffect(() => {
-    if (!selectedInverterObj || !selectedPanelObj) {
-      setResult(null)
-      return
-    }
-
-    const match = dimensioning.find(
-      (d) =>
-        d.inverter_id === selectedInverterObj.id &&
-        d.panel_id === selectedPanelObj.id
-    )
-
-    if (!match) {
-  setResult(null)
-} else {
-  setResult(match.max_quantity)
-}
-  }, [selectedInverterObj, selectedPanelObj, dimensioning])*/
-
-  useEffect(() => {
-  if (selectedInverterObj && selectedPanelObj) {
-    calculate(selectedInverterObj.id, selectedPanelObj.id)
-  }
-}, [selectedInverterObj, selectedPanelObj])
+  const canCalculate = selectedInverterObj && selectedPanelObj
 
   return (
     <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
 
-      {/* HEADER */}
       <div>
         <h1 className="text-3xl font-bold">
           ⚡ Dimensionamento Solar
         </h1>
         <p className="text-gray-500">
-          Selecione os equipamentos para calcular automaticamente
+          Selecione os equipamentos e clique em calcular
         </p>
       </div>
 
-      {/* FORM */}
       <Card>
         <h2 className="text-lg font-semibold mb-4">
           Configurar sistema
@@ -151,6 +112,7 @@ export default function Dashboard() {
               onChange={(e) => {
                 setSelectedInverterBrand(e.target.value)
                 setSelectedInverterModel("")
+                resetResult()
               }}
             >
               <option value="">Marca do inversor</option>
@@ -162,7 +124,10 @@ export default function Dashboard() {
             <select
               className="border p-2 rounded w-full"
               value={selectedInverterModel}
-              onChange={(e) => setSelectedInverterModel(e.target.value)}
+              onChange={(e) => {
+                setSelectedInverterModel(e.target.value)
+                resetResult()
+              }}
             >
               <option value="">Modelo do inversor</option>
               {filteredInverters.map((i) => (
@@ -179,6 +144,7 @@ export default function Dashboard() {
               onChange={(e) => {
                 setSelectedPanelBrand(e.target.value)
                 setSelectedPanelModel("")
+                resetResult()
               }}
             >
               <option value="">Marca da placa</option>
@@ -190,7 +156,10 @@ export default function Dashboard() {
             <select
               className="border p-2 rounded w-full"
               value={selectedPanelModel}
-              onChange={(e) => setSelectedPanelModel(e.target.value)}
+              onChange={(e) => {
+                setSelectedPanelModel(e.target.value)
+                resetResult()
+              }}
             >
               <option value="">Modelo da placa</option>
               {filteredPanels.map((p) => (
@@ -198,35 +167,48 @@ export default function Dashboard() {
               ))}
             </select>
           </div>
+        </div>
 
+        {/* BOTÃO CALCULAR */}
+        <div className="mt-4 flex justify-center">
+          <button
+            onClick={handleCalculate}
+            disabled={!canCalculate}
+            className={`px-4 py-2 rounded font-semibold transition
+              ${canCalculate
+                ? "bg-blue-600 text-white hover:bg-blue-700"
+                : "bg-gray-300 text-gray-600 cursor-not-allowed"
+              }`}
+          >
+            Calcular
+          </button>
         </div>
       </Card>
 
       {/* RESULTADO */}
-      {selectedInverterObj && selectedPanelObj && result === null && (
-  <Card>
-    <p className="text-red-500 font-semibold">
-      ⚠️ Essa combinação não possui dimensionamento cadastrado.
-    </p>
-  </Card>
-)}
+      {hasCalculated && selectedInverterObj && selectedPanelObj && result === null && (
+        <Card>
+          <p className="text-red-500 font-semibold">
+            ⚠️ Essa combinação não possui dimensionamento cadastrado.
+          </p>
+        </Card>
+      )}
 
-{result !== null && (
-  <Card>
-    <h2 className="text-lg font-semibold mb-2">
-      Resultado
-    </h2>
+      {hasCalculated && result !== null && (
+        <Card>
+          <h2 className="text-lg font-semibold mb-2">
+            Resultado
+          </h2>
 
-    <p className="text-3xl font-bold text-green-600">
-      {result} placas máximas
-    </p>
+          <p className="text-3xl font-bold text-green-600">
+            {result} placas máximas
+          </p>
 
-    <p className="text-gray-500 text-sm">
-      Compatível com o inversor e placa selecionados
-    </p>
-  </Card>
-)}
-
+          <p className="text-gray-500 text-sm">
+            Compatível com o inversor e placa selecionados
+          </p>
+        </Card>
+      )}
     </div>
   )
 }
