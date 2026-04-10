@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
+import { Card } from "@/components/admin/Card"
 
 export default function InvertersAdmin() {
   const [inverters, setInverters] = useState<any[]>([])
@@ -32,6 +33,7 @@ export default function InvertersAdmin() {
   }, [])
 
   return (
+    <Card>
     <div className="p-6 space-y-4">
 
       {/* TÍTULO */}
@@ -91,5 +93,6 @@ export default function InvertersAdmin() {
       </div>
 
     </div>
+    </Card>
   )
 }

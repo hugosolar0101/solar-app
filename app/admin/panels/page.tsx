@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
+import { Card } from "@/components/admin/Card"
 
 export default function PanelsAdmin() {
   const [panels, setPanels] = useState<any[]>([])
@@ -42,6 +43,7 @@ export default function PanelsAdmin() {
   }, [])
 
   return (
+    <Card>
     <div className="p-6 space-y-4">
 
       <h1 className="text-2xl font-bold">Placas Solares</h1>
@@ -107,5 +109,6 @@ export default function PanelsAdmin() {
       </div>
 
     </div>
+    </Card>
   )
 }
