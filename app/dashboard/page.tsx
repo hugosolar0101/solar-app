@@ -7,7 +7,7 @@ import { Card } from "@/components/admin/Card"
 export default function Dashboard() {
   const [inverters, setInverters] = useState<any[]>([])
   const [panels, setPanels] = useState<any[]>([])
-  const [dimensioning, setDimensioning] = useState<any[]>([])
+  //const [dimensioning, setDimensioning] = useState<any[]>([])
 
   const [selectedInverterBrand, setSelectedInverterBrand] = useState("")
   const [selectedInverterModel, setSelectedInverterModel] = useState("")
@@ -19,21 +19,56 @@ export default function Dashboard() {
 
   // 🔹 BUSCAR DADOS DO SUPABASE
   async function fetchData() {
-    const [{ data: inv }, { data: pan }, { data: dim }] =
-      await Promise.all([
-        supabase.from("inverters").select("*"),
-        supabase.from("panels").select("*"),
-        supabase.from("dimensioning").select("*"),
-      ])
+  //const { data: inv, error: err1 } = await supabase.from("inverters").select("*")
+  //const { data: pan, error: err2 } = await supabase.from("panels").select("*")
+  const [{ data: inv }, { data: pan }] =
+    await Promise.all([
+      supabase.from("inverters").select("*"),
+      supabase.from("panels").select("*"),
+    ])
 
-    setInverters(inv || [])
-    setPanels(pan || [])
-    setDimensioning(dim || [])
-  }
+  setInverters(inv || [])
+  setPanels(pan || [])
+  //const { data: dim, error: err3 } = await supabase.from("dimensioning").select("*")
+
+  //console.log("INVERSORES:", inv, err1)
+  //console.log("PLACAS:", pan, err2)
+  //console.log("DIMENSIONAMENTO:", dim, err3)
+
+  setInverters(inv || [])
+  setPanels(pan || [])
+  //setDimensioning(dim || [])
+}
 
   useEffect(() => {
     fetchData()
   }, [])
+
+  /*async function fetchData() {
+  const [{ data: inv }, { data: pan }] =
+    await Promise.all([
+      supabase.from("inverters").select("*"),
+      supabase.from("panels").select("*"),
+    ])
+
+  setInverters(inv || [])
+  setPanels(pan || [])
+}*/
+
+  async function calculate(inverterId: string, panelId: string) {
+  const { data } = await supabase
+    .from("dimensioning")
+    .select("max_quantity")
+    .eq("inverter_id", inverterId)
+    .eq("panel_id", panelId)
+    .single()
+
+  if (!data) {
+    setResult(null)
+  } else {
+    setResult(data.max_quantity)
+  }
+}
 
   // 🔹 LISTAS DE MARCAS
   const inverterBrands = [...new Set(inverters.map(i => i.brand))]
@@ -62,7 +97,7 @@ export default function Dashboard() {
   )
 
   // 🔥 CALCULAR AUTOMATICAMENTE
-  useEffect(() => {
+ /* useEffect(() => {
     if (!selectedInverterObj || !selectedPanelObj) {
       setResult(null)
       return
@@ -74,8 +109,18 @@ export default function Dashboard() {
         d.panel_id === selectedPanelObj.id
     )
 
-    setResult(match?.max_quantity || 0)
-  }, [selectedInverterObj, selectedPanelObj, dimensioning])
+    if (!match) {
+  setResult(null)
+} else {
+  setResult(match.max_quantity)
+}
+  }, [selectedInverterObj, selectedPanelObj, dimensioning])*/
+
+  useEffect(() => {
+  if (selectedInverterObj && selectedPanelObj) {
+    calculate(selectedInverterObj.id, selectedPanelObj.id)
+  }
+}, [selectedInverterObj, selectedPanelObj])
 
   return (
     <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
@@ -158,21 +203,29 @@ export default function Dashboard() {
       </Card>
 
       {/* RESULTADO */}
-      {result !== null && (
-        <Card>
-          <h2 className="text-lg font-semibold mb-2">
-            Resultado
-          </h2>
+      {selectedInverterObj && selectedPanelObj && result === null && (
+  <Card>
+    <p className="text-red-500 font-semibold">
+      ⚠️ Essa combinação não possui dimensionamento cadastrado.
+    </p>
+  </Card>
+)}
 
-          <p className="text-3xl font-bold text-green-600">
-            {result} placas máximas
-          </p>
+{result !== null && (
+  <Card>
+    <h2 className="text-lg font-semibold mb-2">
+      Resultado
+    </h2>
 
-          <p className="text-gray-500 text-sm">
-            Compatível com o inversor e placa selecionados
-          </p>
-        </Card>
-      )}
+    <p className="text-3xl font-bold text-green-600">
+      {result} placas máximas
+    </p>
+
+    <p className="text-gray-500 text-sm">
+      Compatível com o inversor e placa selecionados
+    </p>
+  </Card>
+)}
 
     </div>
   )
