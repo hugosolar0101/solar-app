@@ -1,73 +1,81 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { supabase } from "../../lib/supabaseClient";
-import { useRouter } from "next/navigation"
-import { getUserRole } from "@/services/auth"
+import { useState } from "react";
+import { createClient } from "@/lib/supabase";
 
-export default function Login() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const router = useRouter()
-  
+export default function LoginPage() {
+  const supabase = createClient();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  })
+    setLoading(true);
 
-  if (error) {
-    alert("Erro ao logar")
-    return
-  }
-
-  const role = await getUserRole()
-
-  if (role === "admin") {
-    router.push("/admin")
-  } else {
-    router.push("/dashboard")
-  }
-}
-
-  async function handleRegister() {
-    const { error } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
-    })
+    });
 
-    if (error) return alert(error.message)
+    setLoading(false);
 
-    alert("Verifique seu email!")
-  }
+    if (error) {
+      alert(error.message);
+    } else {
+      window.location.href = "/dashboard"; // ajuste se necessário
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!email) {
+      alert("Digite seu email primeiro");
+      return;
+    }
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: "https://solar-app-topaz.vercel.app/update-password",
+    });
+
+    if (error) {
+      alert(error.message);
+    } else {
+      alert("Email de recuperação enviado!");
+    }
+  };
 
   return (
-    <div className="flex h-screen items-center justify-center">
-      <div className="p-6 border rounded w-80">
-        <h1 className="text-xl mb-4">Login</h1>
+    <div className="flex flex-col items-center justify-center h-screen gap-4">
+      <h1 className="text-2xl font-bold">Login</h1>
 
-        <input
-          className="border p-2 w-full mb-2"
-          placeholder="Email"
-          onChange={(e) => setEmail(e.target.value)}
-        />
+      <input
+        className="border p-2"
+        type="email"
+        placeholder="Email"
+        onChange={(e) => setEmail(e.target.value)}
+      />
 
-        <input
-          type="password"
-          className="border p-2 w-full mb-2"
-          placeholder="Senha"
-          onChange={(e) => setPassword(e.target.value)}
-        />
+      <input
+        className="border p-2"
+        type="password"
+        placeholder="Senha"
+        onChange={(e) => setPassword(e.target.value)}
+      />
 
-        <button onClick={handleLogin} className="bg-blue-600 text-white w-full p-2 mb-2">
-          Entrar
-        </button>
+      <button
+        className="bg-blue-500 text-white px-4 py-2"
+        onClick={handleLogin}
+        disabled={loading}
+      >
+        {loading ? "Entrando..." : "Entrar"}
+      </button>
 
-        <button onClick={handleRegister} className="border w-full p-2">
-          Criar conta
-        </button>
-      </div>
+      <button
+        className="text-sm text-blue-600 underline"
+        onClick={handleResetPassword}
+      >
+        Esqueci minha senha
+      </button>
     </div>
-  )
+  );
 }
