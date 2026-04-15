@@ -6,15 +6,25 @@ import { Card } from "@/components/admin/Card"
 
 export default function InvertersAdmin() {
   const [inverters, setInverters] = useState<any[]>([])
+  const [search, setSearch] = useState("")
   const [brand, setBrand] = useState("")
   const [model, setModel] = useState("")
-  const [loading, setLoading] = useState(false)
 
-  async function fetchData() {
-    const { data, error } = await supabase.from("inverters").select("*")
+  async function fetchData(searchTerm = "") {
+    let query = supabase.from("inverters").select("*").limit(50)
+
+    if (searchTerm) {
+      const term = `%${searchTerm}%`
+
+      query = query.or(
+        `brand.ilike.${term},model.ilike.${term}`
+      )
+    }
+
+    const { data, error } = await query
 
     if (error) {
-      console.error("Erro ao buscar inversores:", error)
+      console.error(error)
       return
     }
 
@@ -24,42 +34,36 @@ export default function InvertersAdmin() {
   async function addInverter() {
     if (!brand || !model) return
 
-    setLoading(true)
-
-    const { data, error } = await supabase
-      .from("inverters")
-      .insert([{ brand, model }])
-      .select()
-
-    if (error) {
-      console.error("Erro ao inserir inversor:", error)
-      setLoading(false)
-      return
-    }
-
-    console.log("Inserido com sucesso:", data)
+    await supabase.from("inverters").insert([
+      { brand, model, active: true }
+    ])
 
     setBrand("")
     setModel("")
+    fetchData(search)
+  }
 
-    await fetchData()
+  async function toggleActive(inv: any) {
+    await supabase
+      .from("inverters")
+      .update({ active: !inv.active })
+      .eq("id", inv.id)
 
-    setLoading(false)
+    fetchData(search)
   }
 
   async function deleteInverter(id: string) {
-    const { error } = await supabase
-      .from("inverters")
-      .delete()
-      .eq("id", id)
-
-    if (error) {
-      console.error("Erro ao deletar:", error)
-      return
-    }
-
-    await fetchData()
+    await supabase.from("inverters").delete().eq("id", id)
+    fetchData(search)
   }
+
+  useEffect(() => {
+    const delay = setTimeout(() => {
+      fetchData(search)
+    }, 400)
+
+    return () => clearTimeout(delay)
+  }, [search])
 
   useEffect(() => {
     fetchData()
@@ -71,12 +75,16 @@ export default function InvertersAdmin() {
 
         <h1 className="text-2xl font-bold">Inversores</h1>
 
-        {/* FORM */}
-        <div className="bg-white p-4 rounded shadow space-y-4">
-          <h2 className="text-xl font-semibold">
-            Adicionar Inversor
-          </h2>
+        {/* 🔍 BUSCA */}
+        <input
+          className="border p-2 rounded w-full"
+          placeholder="Buscar inversor..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
 
+        {/* FORM */}
+        <div className="bg-white p-4 rounded shadow">
           <div className="flex gap-2">
             <input
               className="border p-2 rounded w-full"
@@ -84,53 +92,52 @@ export default function InvertersAdmin() {
               value={brand}
               onChange={(e) => setBrand(e.target.value)}
             />
-
             <input
               className="border p-2 rounded w-full"
               placeholder="Modelo"
               value={model}
               onChange={(e) => setModel(e.target.value)}
             />
-
             <button
-              className={`px-4 rounded text-white ${
-                loading
-                  ? "bg-gray-400"
-                  : "bg-blue-600 hover:bg-blue-700"
-              }`}
+              className="bg-blue-600 text-white px-4 rounded"
               onClick={addInverter}
-              disabled={loading}
             >
-              {loading ? "Salvando..." : "Adicionar"}
+              Adicionar
             </button>
           </div>
         </div>
 
         {/* LISTA */}
         <div className="bg-white rounded shadow">
-          {inverters.length === 0 && (
-            <div className="p-4 text-gray-500">
-              Nenhum inversor cadastrado
-            </div>
-          )}
 
           {inverters.map((inv) => (
-            <div
-              key={inv.id}
-              className="flex justify-between p-3 border-b"
-            >
+            <div key={inv.id} className="flex justify-between p-3 border-b">
+
               <span>
                 {inv.brand} - {inv.model}
               </span>
 
-              <button
-                className="text-red-500"
-                onClick={() => deleteInverter(inv.id)}
-              >
-                Excluir
-              </button>
+              <div className="flex gap-2">
+                <button
+                  className={`px-2 py-1 rounded text-white ${
+                    inv.active ? "bg-green-600" : "bg-gray-400"
+                  }`}
+                  onClick={() => toggleActive(inv)}
+                >
+                  {inv.active ? "Ativo" : "Inativo"}
+                </button>
+
+                <button
+                  className="text-red-500"
+                  onClick={() => deleteInverter(inv.id)}
+                >
+                  Excluir
+                </button>
+              </div>
+
             </div>
           ))}
+
         </div>
 
       </div>

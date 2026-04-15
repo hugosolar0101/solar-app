@@ -24,8 +24,8 @@ export default function Dashboard() {
       supabase.from("panels").select("*"),
     ])
 
-    setInverters(inv || [])
-    setPanels(pan || [])
+    setInverters((inv || []).filter(i => i.active))
+    setPanels((pan || []).filter(p => p.active))
   }
 
   useEffect(() => {
@@ -40,35 +40,43 @@ export default function Dashboard() {
 
   // 🔹 CALCULAR (APENAS AO CLICAR)
   async function handleCalculate() {
-    if (!selectedInverterObj || !selectedPanelObj) return
+  if (!selectedInverterObj || !selectedPanelObj) return
 
-    setHasCalculated(true)
+  setHasCalculated(true)
 
-    const { data } = await supabase
-      .from("dimensioning")
-      .select("max_quantity")
-      .eq("inverter_id", selectedInverterObj.id)
-      .eq("panel_id", selectedPanelObj.id)
-      .maybeSingle()
+  const { data } = await supabase
+    .from("dimensioning")
+    .select("max_quantity, active")
+    .eq("inverter_id", selectedInverterObj.id)
+    .eq("panel_id", selectedPanelObj.id)
+    .maybeSingle()
 
-    if (!data) {
-      setResult(null)
-    } else {
-      setResult(data.max_quantity)
-    }
+  // ❌ não existe OU está inativo
+  if (!data || !data.active) {
+    setResult(null)
+    return
   }
 
+  // ✅ válido
+  setResult(data.max_quantity)
+}
+
   // 🔹 LISTAS
-  const inverterBrands = [...new Set(inverters.map(i => i.brand))]
-  const panelBrands = [...new Set(panels.map(p => p.brand))]
+  const inverterBrands = [...new Set(inverters.map(i => i.brand))].sort((a, b) =>
+  a.localeCompare(b)
+)
 
-  const filteredInverters = inverters.filter(
-    (i) => i.brand === selectedInverterBrand
-  )
+  const panelBrands = [...new Set(panels.map(p => p.brand))].sort((a, b) =>
+  a.localeCompare(b)
+)
 
-  const filteredPanels = panels.filter(
-    (p) => p.brand === selectedPanelBrand
-  )
+  const filteredInverters = inverters
+  .filter((i) => i.brand === selectedInverterBrand)
+  .sort((a, b) => a.model.localeCompare(b.model))
+
+  const filteredPanels = panels
+  .filter((p) => p.brand === selectedPanelBrand)
+  .sort((a, b) => a.model.localeCompare(b.model))
 
   // 🔹 SELECIONADOS
   const selectedInverterObj = inverters.find(
@@ -186,13 +194,13 @@ export default function Dashboard() {
       </Card>
 
       {/* RESULTADO */}
-      {hasCalculated && selectedInverterObj && selectedPanelObj && result === null && (
-        <Card>
-          <p className="text-red-500 font-semibold">
-            ⚠️ Essa combinação não possui dimensionamento cadastrado.
-          </p>
-        </Card>
-      )}
+      {hasCalculated && result === null && (
+  <Card>
+    <p className="text-red-500 font-semibold">
+      ⚠️ Dimensionamento não disponível. Contate o suporte.
+    </p>
+  </Card>
+)}
 
       {hasCalculated && result !== null && (
         <Card>

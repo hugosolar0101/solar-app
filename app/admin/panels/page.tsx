@@ -6,16 +6,26 @@ import { Card } from "@/components/admin/Card"
 
 export default function PanelsAdmin() {
   const [panels, setPanels] = useState<any[]>([])
+  const [search, setSearch] = useState("")
   const [brand, setBrand] = useState("")
   const [model, setModel] = useState("")
   const [power, setPower] = useState("")
-  const [loading, setLoading] = useState(false)
 
-  async function fetchData() {
-    const { data, error } = await supabase.from("panels").select("*")
+  async function fetchData(searchTerm = "") {
+    let query = supabase.from("panels").select("*").limit(50)
+
+    if (searchTerm) {
+      const term = `%${searchTerm}%`
+
+      query = query.or(
+        `brand.ilike.${term},model.ilike.${term}`
+      )
+    }
+
+    const { data, error } = await query
 
     if (error) {
-      console.error("Erro panels:", error)
+      console.error(error)
       return
     }
 
@@ -25,44 +35,47 @@ export default function PanelsAdmin() {
   async function addPanel() {
     if (!brand || !model || !power) return
 
-    setLoading(true)
-
-    const { error } = await supabase.from("panels").insert([
+    await supabase.from("panels").insert([
       {
         brand,
         model,
         power: Number(power),
+        active: true,
       },
     ])
-
-    if (error) {
-      console.error("Erro ao inserir painel:", error)
-      setLoading(false)
-      return
-    }
 
     setBrand("")
     setModel("")
     setPower("")
-
-    await fetchData()
-
-    setLoading(false)
+    fetchData(search)
   }
 
-  async function deletePanel(id: string) {
+  async function toggleActive(panel: any) {
     const { error } = await supabase
       .from("panels")
-      .delete()
-      .eq("id", id)
+      .update({ active: !panel.active })
+      .eq("id", panel.id)
 
     if (error) {
-      console.error("Erro ao deletar painel:", error)
+      console.error(error)
       return
     }
 
-    await fetchData()
+    fetchData(search)
   }
+
+  async function deletePanel(id: string) {
+    await supabase.from("panels").delete().eq("id", id)
+    fetchData(search)
+  }
+
+  useEffect(() => {
+    const delay = setTimeout(() => {
+      fetchData(search)
+    }, 400)
+
+    return () => clearTimeout(delay)
+  }, [search])
 
   useEffect(() => {
     fetchData()
@@ -74,13 +87,17 @@ export default function PanelsAdmin() {
 
         <h1 className="text-2xl font-bold">Placas Solares</h1>
 
+        {/* BUSCA */}
+        <input
+          className="border p-2 rounded w-full"
+          placeholder="Buscar placa..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+
         {/* FORM */}
-        <div className="bg-white p-4 rounded shadow space-y-4">
-
-          <h2 className="text-xl font-semibold">Adicionar Placa</h2>
-
+        <div className="bg-white p-4 rounded shadow">
           <div className="grid grid-cols-3 gap-2">
-
             <input
               className="border p-2 rounded"
               placeholder="Marca"
@@ -104,38 +121,45 @@ export default function PanelsAdmin() {
           </div>
 
           <button
-            className={`px-4 py-2 rounded text-white ${
-              loading ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
-            }`}
+            className="mt-2 bg-blue-600 text-white px-4 py-2 rounded"
             onClick={addPanel}
-            disabled={loading}
           >
-            {loading ? "Salvando..." : "Adicionar"}
+            Adicionar
           </button>
         </div>
 
         {/* LISTA */}
         <div className="bg-white rounded shadow">
-          {panels.length === 0 && (
-            <div className="p-4 text-gray-500">
-              Nenhuma placa cadastrada
-            </div>
-          )}
 
           {panels.map((p) => (
-            <div key={p.id} className="flex justify-between p-3 border-b">
+            <div
+              key={p.id}
+              className="flex justify-between items-center p-3 border-b"
+            >
               <span>
                 {p.brand} - {p.model} ({p.power}W)
               </span>
 
-              <button
-                className="text-red-500"
-                onClick={() => deletePanel(p.id)}
-              >
-                Excluir
-              </button>
+              <div className="flex gap-2">
+                <button
+                  className={`px-2 py-1 rounded text-white ${
+                    p.active ? "bg-green-600" : "bg-gray-400"
+                  }`}
+                  onClick={() => toggleActive(p)}
+                >
+                  {p.active ? "Ativo" : "Inativo"}
+                </button>
+
+                <button
+                  className="text-red-500"
+                  onClick={() => deletePanel(p.id)}
+                >
+                  Excluir
+                </button>
+              </div>
             </div>
           ))}
+
         </div>
 
       </div>
