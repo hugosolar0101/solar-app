@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase";
 
 export default function UpdatePasswordPage() {
@@ -8,6 +8,25 @@ export default function UpdatePasswordPage() {
 
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // ✅ IMPORTANTE: capturar sessão do link
+  useEffect(() => {
+  const hash = window.location.hash;
+
+  if (hash) {
+    const params = new URLSearchParams(hash.replace("#", "?"));
+
+    const access_token = params.get("access_token");
+    const refresh_token = params.get("refresh_token");
+
+    if (access_token && refresh_token) {
+      supabase.auth.setSession({
+        access_token,
+        refresh_token,
+      });
+    }
+  }
+}, []);
 
   const handleUpdate = async () => {
     setLoading(true);
