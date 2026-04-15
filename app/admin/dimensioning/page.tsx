@@ -9,41 +9,22 @@ export default function DimensioningAdmin() {
   const [inverters, setInverters] = useState<any[]>([])
   const [panels, setPanels] = useState<any[]>([])
 
+  const [search, setSearch] = useState("")
   const [selectedInverter, setSelectedInverter] = useState("")
   const [selectedPanel, setSelectedPanel] = useState("")
   const [max, setMax] = useState("")
 
-  const [search, setSearch] = useState("")
-  const [loading, setLoading] = useState(false)
+  async function fetchData(searchTerm = "") {
+  const { data, error } = await supabase
+    .rpc("search_dimensioning", { search: searchTerm })
 
-  // 🔥 BUSCA USANDO VIEW (SEM LIMITE DE 1000)
-  async function fetchDimensioning(searchTerm = "") {
-    setLoading(true)
-
-    let query = supabase
-      .from("dimensioning_search")
-      .select("*")
-      .limit(50)
-
-    if (searchTerm) {
-      const term = `%${searchTerm}%`
-
-      query = query.or(
-        `inverter_brand.ilike.${term},inverter_model.ilike.${term},panel_brand.ilike.${term},panel_model.ilike.${term}`
-      )
-    }
-
-    const { data, error } = await query
-
-    if (error) {
-      console.error("Erro ao buscar dimensionamento:", error)
-      setLoading(false)
-      return
-    }
-
-    setDimensioning(data || [])
-    setLoading(false)
+  if (error) {
+    console.error(error)
+    return
   }
+
+  setDimensioning(data || [])
+}
 
   async function fetchInverters() {
     const { data } = await supabase.from("inverters").select("*")
@@ -58,9 +39,7 @@ export default function DimensioningAdmin() {
   async function addItem() {
     if (!selectedInverter || !selectedPanel || !max) return
 
-    setLoading(true)
-
-    const { error } = await supabase.from("dimensioning").insert([
+    await supabase.from("dimensioning").insert([
       {
         inverter_id: selectedInverter,
         panel_id: selectedPanel,
@@ -69,51 +48,34 @@ export default function DimensioningAdmin() {
       },
     ])
 
-    if (error) {
-      console.error(error)
-      setLoading(false)
-      return
-    }
-
-    setSelectedInverter("")
-    setSelectedPanel("")
     setMax("")
-
-    await fetchDimensioning(search)
-
-    setLoading(false)
+    fetchData(search)
   }
 
   async function toggleActive(item: any) {
-    const { error } = await supabase
+    await supabase
       .from("dimensioning")
       .update({ active: !item.active })
       .eq("id", item.id)
 
-    if (error) {
-      console.error(error)
-      return
-    }
-
-    fetchDimensioning(search)
+    fetchData(search)
   }
 
   async function deleteItem(id: string) {
     await supabase.from("dimensioning").delete().eq("id", id)
-    fetchDimensioning(search)
+    fetchData(search)
   }
 
-  // 🔥 debounce da busca
   useEffect(() => {
     const delay = setTimeout(() => {
-      fetchDimensioning(search)
+      fetchData(search)
     }, 400)
 
     return () => clearTimeout(delay)
   }, [search])
 
   useEffect(() => {
-    fetchDimensioning()
+    fetchData()
     fetchInverters()
     fetchPanels()
   }, [])
@@ -124,17 +86,14 @@ export default function DimensioningAdmin() {
 
         <h1 className="text-2xl font-bold">Dimensionamento</h1>
 
-        {/* 🔍 BUSCA */}
         <input
           className="border p-2 rounded w-full"
-          placeholder="Buscar inversor ou placa..."
+          placeholder="Buscar..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
 
-        {/* FORM */}
         <div className="bg-white p-4 rounded shadow space-y-4">
-
           <div className="grid grid-cols-3 gap-2">
 
             <select
@@ -172,34 +131,16 @@ export default function DimensioningAdmin() {
           </div>
 
           <button
-            className={`px-4 py-2 rounded text-white ${
-              loading ? "bg-gray-400" : "bg-blue-600"
-            }`}
+            className="bg-blue-600 text-white px-4 py-2 rounded"
             onClick={addItem}
-            disabled={loading}
           >
-            {loading ? "Salvando..." : "Adicionar"}
+            Adicionar
           </button>
         </div>
 
-        {/* LISTA */}
         <div className="bg-white rounded shadow">
-
-          {loading && (
-            <div className="p-4 text-gray-500">Carregando...</div>
-          )}
-
-          {!loading && dimensioning.length === 0 && (
-            <div className="p-4 text-gray-500">
-              Nenhum resultado encontrado
-            </div>
-          )}
-
-          {!loading && dimensioning.map((d) => (
-            <div
-              key={d.id}
-              className="flex justify-between items-center p-3 border-b"
-            >
+          {dimensioning.map((d) => (
+            <div key={d.id} className="flex justify-between p-3 border-b">
               <span>
                 {d.inverter_brand} {d.inverter_model} →
                 {d.panel_brand} {d.panel_model} =
@@ -225,7 +166,6 @@ export default function DimensioningAdmin() {
               </div>
             </div>
           ))}
-
         </div>
 
       </div>

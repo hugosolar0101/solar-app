@@ -11,25 +11,16 @@ export default function InvertersAdmin() {
   const [model, setModel] = useState("")
 
   async function fetchData(searchTerm = "") {
-    let query = supabase.from("inverters").select("*").limit(50)
+  const { data, error } = await supabase
+    .rpc("search_inverters", { search: searchTerm })
 
-    if (searchTerm) {
-      const term = `%${searchTerm}%`
-
-      query = query.or(
-        `brand.ilike.${term},model.ilike.${term}`
-      )
-    }
-
-    const { data, error } = await query
-
-    if (error) {
-      console.error(error)
-      return
-    }
-
-    setInverters(data || [])
+  if (error) {
+    console.error(error)
+    return
   }
+
+  setInverters(data || [])
+}
 
   async function addInverter() {
     if (!brand || !model) return
@@ -75,7 +66,6 @@ export default function InvertersAdmin() {
 
         <h1 className="text-2xl font-bold">Inversores</h1>
 
-        {/* 🔍 BUSCA */}
         <input
           className="border p-2 rounded w-full"
           placeholder="Buscar inversor..."
@@ -83,7 +73,6 @@ export default function InvertersAdmin() {
           onChange={(e) => setSearch(e.target.value)}
         />
 
-        {/* FORM */}
         <div className="bg-white p-4 rounded shadow">
           <div className="flex gap-2">
             <input
@@ -107,15 +96,10 @@ export default function InvertersAdmin() {
           </div>
         </div>
 
-        {/* LISTA */}
         <div className="bg-white rounded shadow">
-
           {inverters.map((inv) => (
             <div key={inv.id} className="flex justify-between p-3 border-b">
-
-              <span>
-                {inv.brand} - {inv.model}
-              </span>
+              <span>{inv.brand} - {inv.model}</span>
 
               <div className="flex gap-2">
                 <button
@@ -134,10 +118,8 @@ export default function InvertersAdmin() {
                   Excluir
                 </button>
               </div>
-
             </div>
           ))}
-
         </div>
 
       </div>

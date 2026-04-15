@@ -12,25 +12,16 @@ export default function PanelsAdmin() {
   const [power, setPower] = useState("")
 
   async function fetchData(searchTerm = "") {
-    let query = supabase.from("panels").select("*").limit(50)
+  const { data, error } = await supabase
+    .rpc("search_panels", { search: searchTerm })
 
-    if (searchTerm) {
-      const term = `%${searchTerm}%`
-
-      query = query.or(
-        `brand.ilike.${term},model.ilike.${term}`
-      )
-    }
-
-    const { data, error } = await query
-
-    if (error) {
-      console.error(error)
-      return
-    }
-
-    setPanels(data || [])
+  if (error) {
+    console.error(error)
+    return
   }
+
+  setPanels(data || [])
+}
 
   async function addPanel() {
     if (!brand || !model || !power) return
@@ -51,15 +42,10 @@ export default function PanelsAdmin() {
   }
 
   async function toggleActive(panel: any) {
-    const { error } = await supabase
+    await supabase
       .from("panels")
       .update({ active: !panel.active })
       .eq("id", panel.id)
-
-    if (error) {
-      console.error(error)
-      return
-    }
 
     fetchData(search)
   }
@@ -87,7 +73,6 @@ export default function PanelsAdmin() {
 
         <h1 className="text-2xl font-bold">Placas Solares</h1>
 
-        {/* BUSCA */}
         <input
           className="border p-2 rounded w-full"
           placeholder="Buscar placa..."
@@ -95,7 +80,6 @@ export default function PanelsAdmin() {
           onChange={(e) => setSearch(e.target.value)}
         />
 
-        {/* FORM */}
         <div className="bg-white p-4 rounded shadow">
           <div className="grid grid-cols-3 gap-2">
             <input
@@ -104,14 +88,12 @@ export default function PanelsAdmin() {
               value={brand}
               onChange={(e) => setBrand(e.target.value)}
             />
-
             <input
               className="border p-2 rounded"
               placeholder="Modelo"
               value={model}
               onChange={(e) => setModel(e.target.value)}
             />
-
             <input
               className="border p-2 rounded"
               placeholder="Potência (W)"
@@ -128,17 +110,10 @@ export default function PanelsAdmin() {
           </button>
         </div>
 
-        {/* LISTA */}
         <div className="bg-white rounded shadow">
-
           {panels.map((p) => (
-            <div
-              key={p.id}
-              className="flex justify-between items-center p-3 border-b"
-            >
-              <span>
-                {p.brand} - {p.model} ({p.power}W)
-              </span>
+            <div key={p.id} className="flex justify-between p-3 border-b">
+              <span>{p.brand} - {p.model} ({p.power}W)</span>
 
               <div className="flex gap-2">
                 <button
@@ -159,7 +134,6 @@ export default function PanelsAdmin() {
               </div>
             </div>
           ))}
-
         </div>
 
       </div>

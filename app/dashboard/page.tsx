@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import { Card } from "@/components/admin/Card"
+import { Header } from "@/components/Header"
 
 export default function Dashboard() {
   const [inverters, setInverters] = useState<any[]>([])
@@ -95,6 +96,8 @@ export default function Dashboard() {
 
   return (
     <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
+
+      <Header title="Dimensionamento Solar" />
 
       <div>
         <h1 className="text-3xl font-bold">
