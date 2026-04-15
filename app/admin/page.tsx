@@ -7,49 +7,33 @@ export default function AdminPage() {
   const supabase = createClient();
 
   const [loading, setLoading] = useState(true);
-  const [authorized, setAuthorized] = useState(false);
 
   useEffect(() => {
-    const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
 
-      if (!user) {
-        window.location.href = "/login";
+      // 🔥 espera sessão realmente existir
+      if (!session) {
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 200);
         return;
       }
 
-      // 🔥 buscar role
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
+      const role = session.user.user_metadata?.role;
 
-      if (profile?.role !== "admin") {
+      if (role !== "admin") {
         window.location.href = "/dashboard";
         return;
       }
 
-      setAuthorized(true);
       setLoading(false);
     };
 
-    checkUser();
+    checkAuth();
   }, []);
 
-  if (loading) {
-    return <p>Carregando...</p>;
-  }
+  if (loading) return <p>Carregando...</p>;
 
-  if (!authorized) {
-    return null;
-  }
-
-  return (
-    <div>
-      <h1>Painel Admin</h1>
-      console.log(await supabase.auth.getSession());
-    </div>
-  );
-  
+  return <h1>Admin OK</h1>;
 }
