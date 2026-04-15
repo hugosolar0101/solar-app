@@ -6,10 +6,10 @@ import { createClient } from "@/lib/supabase";
 export default function AdminPage() {
   const supabase = createClient();
 
-  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState<"loading" | "ok" | "deny">("loading");
 
   useEffect(() => {
-    const checkAccess = async () => {
+    const check = async () => {
       const { data: { session } } = await supabase.auth.getSession();
 
       if (!session) {
@@ -23,24 +23,30 @@ export default function AdminPage() {
         .eq("id", session.user.id)
         .single();
 
-      if (profile?.role !== "admin") {
+      if (profile?.role === "admin") {
+        setStatus("ok");
+      } else {
         window.location.replace("/dashboard");
-        return;
       }
-
-      setLoading(false);
     };
 
-    checkAccess();
+    check();
   }, []);
 
-  if (loading) {
-    return <div>Carregando...</div>;
+  if (status === "loading") {
+    return (
+      <div className="p-6">
+        Carregando painel admin...
+      </div>
+    );
   }
 
   return (
-    <div>
+    <div className="p-6">
       <h1>Painel Admin</h1>
+
+      {/* 🔥 AQUI VOLTA TUDO DO SEU PAINEL */}
+      <button>Cadastrar</button>
     </div>
   );
 }
