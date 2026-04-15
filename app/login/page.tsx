@@ -14,24 +14,29 @@ export default function LoginPage() {
     setLoading(true);
 
     const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+  email,
+  password,
+});
 
-    setLoading(false);
+if (error) {
+  alert(error.message);
+  return;
+}
 
-    if (error) {
-      alert(error.message);
-      return;
-    }
+const user = data.user;
 
-    const role = data.user?.user_metadata?.role;
+// 🔥 buscar role REAL no banco
+const { data: profile } = await supabase
+  .from("profiles")
+  .select("role")
+  .eq("id", user.id)
+  .single();
 
-    if (role === "admin") {
-      window.location.href = "/admin";
-    } else {
-      window.location.href = "/dashboard";
-    }
+if (profile?.role === "admin") {
+  window.location.href = "/admin";
+} else {
+  window.location.href = "/dashboard";
+}
   };
 
   const handleResetPassword = async () => {
