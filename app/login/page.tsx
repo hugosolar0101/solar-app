@@ -14,52 +14,38 @@ export default function LoginPage() {
     setLoading(true);
 
     const { data, error } = await supabase.auth.signInWithPassword({
-  email,
-  password,
-});
+      email,
+      password,
+    });
 
-if (error) {
-  alert(error.message);
-  return;
-}
+    setLoading(false);
 
-const user = data.user;
-
-// 🔥 buscar role REAL no banco
-const { data: profile } = await supabase
-  .from("profiles")
-  .select("role")
-  .eq("id", user.id)
-  .single();
-
-if (profile?.role === "admin") {
-  window.location.href = "/admin";
-} else {
-  window.location.href = "/dashboard";
-}
-  };
-
-  const handleResetPassword = async () => {
-    if (!email) {
-      alert("Digite seu email primeiro");
+    if (error || !data.session) {
+      alert(error?.message || "Erro ao logar");
       return;
     }
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: "https://solar-app-topaz.vercel.app/update-password",
-    });
+    const userId = data.user.id;
 
-    if (error) {
-      alert(error.message);
+    // 🔥 BUSCA ROLE REAL (NUNCA use metadata)
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", userId)
+      .single();
+
+    const role = profile?.role;
+
+    if (role === "admin") {
+      window.location.replace("/admin");
     } else {
-      alert("Email enviado!");
+      window.location.replace("/dashboard");
     }
   };
 
   return (
-    <div className="flex flex-col gap-4 items-center justify-center h-screen">
+    <div className="flex flex-col gap-3 items-center justify-center h-screen">
       <input
-        type="email"
         placeholder="Email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
@@ -67,8 +53,8 @@ if (profile?.role === "admin") {
       />
 
       <input
-        type="password"
         placeholder="Senha"
+        type="password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         className="border p-2"
@@ -76,10 +62,6 @@ if (profile?.role === "admin") {
 
       <button onClick={handleLogin} disabled={loading}>
         {loading ? "Entrando..." : "Login"}
-      </button>
-
-      <button onClick={handleResetPassword}>
-        Esqueci minha senha
       </button>
     </div>
   );

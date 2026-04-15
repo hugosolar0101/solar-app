@@ -9,31 +9,38 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const checkAuth = async () => {
+    const checkAccess = async () => {
       const { data: { session } } = await supabase.auth.getSession();
 
-      // 🔥 espera sessão realmente existir
       if (!session) {
-        setTimeout(() => {
-          window.location.href = "/login";
-        }, 200);
+        window.location.replace("/login");
         return;
       }
 
-      const role = session.user.user_metadata?.role;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", session.user.id)
+        .single();
 
-      if (role !== "admin") {
-        window.location.href = "/dashboard";
+      if (profile?.role !== "admin") {
+        window.location.replace("/dashboard");
         return;
       }
 
       setLoading(false);
     };
 
-    checkAuth();
+    checkAccess();
   }, []);
 
-  if (loading) return <p>Carregando...</p>;
+  if (loading) {
+    return <div>Carregando...</div>;
+  }
 
-  return <h1>Admin OK</h1>;
+  return (
+    <div>
+      <h1>Painel Admin</h1>
+    </div>
+  );
 }
