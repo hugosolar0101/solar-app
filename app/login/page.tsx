@@ -11,21 +11,37 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-    setLoading(true);
+  setLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
 
+  if (error) {
     setLoading(false);
+    alert(error.message);
+    return;
+  }
 
-    if (error) {
-      alert(error.message);
-    } else {
-      window.location.href = "/dashboard"; // ajuste se necessário
-    }
-  };
+  // ✅ pega usuário logado
+  const user = data.user;
+
+  // 🔥 busca role na tabela profiles
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  setLoading(false);
+
+  if (profile?.role === "admin") {
+    window.location.href = "/admin";
+  } else {
+    window.location.href = "/dashboard";
+  }
+};
 
   const handleResetPassword = async () => {
     if (!email) {
