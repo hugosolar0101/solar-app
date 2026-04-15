@@ -11,37 +11,28 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-  setLoading(true);
+    setLoading(true);
 
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-  if (error) {
     setLoading(false);
-    alert(error.message);
-    return;
-  }
 
-  // ✅ pega usuário logado
-  const user = data.user;
+    if (error) {
+      alert(error.message);
+      return;
+    }
 
-  // 🔥 busca role na tabela profiles
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
+    const role = data.user?.user_metadata?.role;
 
-  setLoading(false);
-
-  if (profile?.role === "admin") {
-    window.location.href = "/admin";
-  } else {
-    window.location.href = "/dashboard";
-  }
-};
+    if (role === "admin") {
+      window.location.href = "/admin";
+    } else {
+      window.location.href = "/dashboard";
+    }
+  };
 
   const handleResetPassword = async () => {
     if (!email) {
@@ -56,40 +47,33 @@ export default function LoginPage() {
     if (error) {
       alert(error.message);
     } else {
-      alert("Email de recuperação enviado!");
+      alert("Email enviado!");
     }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen gap-4">
-      <h1 className="text-2xl font-bold">Login</h1>
-
+    <div className="flex flex-col gap-4 items-center justify-center h-screen">
       <input
-        className="border p-2"
         type="email"
         placeholder="Email"
+        value={email}
         onChange={(e) => setEmail(e.target.value)}
+        className="border p-2"
       />
 
       <input
-        className="border p-2"
         type="password"
         placeholder="Senha"
+        value={password}
         onChange={(e) => setPassword(e.target.value)}
+        className="border p-2"
       />
 
-      <button
-        className="bg-blue-500 text-white px-4 py-2"
-        onClick={handleLogin}
-        disabled={loading}
-      >
-        {loading ? "Entrando..." : "Entrar"}
+      <button onClick={handleLogin} disabled={loading}>
+        {loading ? "Entrando..." : "Login"}
       </button>
 
-      <button
-        className="text-sm text-blue-600 underline"
-        onClick={handleResetPassword}
-      >
+      <button onClick={handleResetPassword}>
         Esqueci minha senha
       </button>
     </div>
