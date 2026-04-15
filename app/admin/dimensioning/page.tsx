@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import { Card } from "@/components/admin/Card"
 
+
 export default function DimensioningAdmin() {
   const [dimensioning, setDimensioning] = useState<any[]>([])
   const [inverters, setInverters] = useState<any[]>([])
