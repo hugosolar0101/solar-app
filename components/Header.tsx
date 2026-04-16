@@ -1,8 +1,11 @@
 "use client"
 
-import { supabase } from "@/lib/supabaseClient"
+import { createClient } from "@/lib/supabase";
 
 export function Header({ title }: { title: string }) {
+
+  const supabase = createClient();
+  
   async function handleLogout() {
     await supabase.auth.signOut()
     window.location.href = "/login"

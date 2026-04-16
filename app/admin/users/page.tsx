@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { supabase } from "@/lib/supabaseClient"
+import { createClient } from "@/lib/supabase";
 import { Card } from "@/components/admin/Card"
 
 export default function UsersAdmin() {
@@ -10,6 +10,8 @@ export default function UsersAdmin() {
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [role, setRole] = useState("user")
+
+  const supabase = createClient();
 
   async function fetchData() {
     const { data } = await supabase.from("users").select("*")

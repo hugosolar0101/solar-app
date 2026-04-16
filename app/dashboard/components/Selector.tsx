@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { supabase } from "@/lib/supabaseClient"
+import { createClient } from "@/lib/supabase";
 
 export default function Selector() {
   const [inverterBrand, setInverterBrand] = useState("")
@@ -11,6 +11,8 @@ export default function Selector() {
   const [panelBrand, setPanelBrand] = useState("")
   const [panels, setPanels] = useState<any[]>([])
   const [selectedPanel, setSelectedPanel] = useState("")
+
+  const supabase = createClient();
 
   const [result, setResult] = useState<number | null>(null)
 

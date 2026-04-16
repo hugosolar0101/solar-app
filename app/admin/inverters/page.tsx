@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { supabase } from "@/lib/supabaseClient"
+import { createClient } from "@/lib/supabase";
 import { Card } from "@/components/admin/Card"
 
 export default function InvertersAdmin() {
@@ -9,6 +9,8 @@ export default function InvertersAdmin() {
   const [search, setSearch] = useState("")
   const [brand, setBrand] = useState("")
   const [model, setModel] = useState("")
+
+  const supabase = createClient();
 
   async function fetchData(searchTerm = "") {
   const { data, error } = await supabase

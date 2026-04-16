@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { supabase } from "@/lib/supabaseClient"
+import { createClient } from "@/lib/supabase";
 import { Card } from "@/components/admin/Card"
 
 
@@ -14,6 +14,8 @@ export default function DimensioningAdmin() {
   const [selectedInverter, setSelectedInverter] = useState("")
   const [selectedPanel, setSelectedPanel] = useState("")
   const [max, setMax] = useState("")
+
+  const supabase = createClient();
 
   async function fetchData(searchTerm = "") {
   const { data, error } = await supabase

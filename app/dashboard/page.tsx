@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { supabase } from "@/lib/supabaseClient"
+import { createClient } from "@/lib/supabase";
 import { Card } from "@/components/admin/Card"
 import { Header } from "@/components/Header"
 
@@ -17,6 +17,8 @@ export default function Dashboard() {
 
   const [result, setResult] = useState<number | null>(null)
   const [hasCalculated, setHasCalculated] = useState(false)
+
+  const supabase = createClient();
 
   // 🔹 BUSCAR DADOS
   async function fetchData() {

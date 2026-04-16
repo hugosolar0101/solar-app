@@ -10,15 +10,46 @@ export default function AdminPage() {
   const [authorized, setAuthorized] = useState(false);
 
   useEffect(() => {
-    const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+    let mounted = true;
 
+    const checkUser = async () => {
+      setLoading(true);
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      // 🔥 retry leve para evitar "null momentâneo"
       if (!user) {
-        window.location.href = "/login";
+        setTimeout(async () => {
+          const {
+            data: { user: retryUser },
+          } = await supabase.auth.getUser();
+
+          if (!retryUser && mounted) {
+            window.location.replace("/login");
+          }
+
+          if (retryUser && mounted) {
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("role")
+              .eq("id", retryUser.id)
+              .single();
+
+            if (profile?.role !== "admin") {
+              window.location.replace("/dashboard");
+              return;
+            }
+
+            setAuthorized(true);
+            setLoading(false);
+          }
+        }, 300);
+
         return;
       }
 
-      // 🔥 buscar role
       const { data: profile } = await supabase
         .from("profiles")
         .select("role")
@@ -26,15 +57,21 @@ export default function AdminPage() {
         .single();
 
       if (profile?.role !== "admin") {
-        window.location.href = "/dashboard";
+        window.location.replace("/dashboard");
         return;
       }
 
-      setAuthorized(true);
-      setLoading(false);
+      if (mounted) {
+        setAuthorized(true);
+        setLoading(false);
+      }
     };
 
     checkUser();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   if (loading) {
