@@ -2,66 +2,94 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase";
+import { useRouter } from "next/navigation";
 
 export default function UpdatePasswordPage() {
   const supabase = createClient();
+  const router = useRouter();
 
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // ✅ IMPORTANTE: capturar sessão do link
   useEffect(() => {
-  const hash = window.location.hash;
+    const handleSession = async () => {
+      // 🔥 pega hash da URL (#access_token=...)
+      const hash = window.location.hash;
 
-  if (hash) {
-    const params = new URLSearchParams(hash.replace("#", "?"));
+      if (!hash) {
+        alert("Link inválido ou expirado");
+        router.replace("/login");
+        return;
+      }
 
-    const access_token = params.get("access_token");
-    const refresh_token = params.get("refresh_token");
+      const params = new URLSearchParams(hash.substring(1));
 
-    if (access_token && refresh_token) {
-      supabase.auth.setSession({
+      const access_token = params.get("access_token");
+      const refresh_token = params.get("refresh_token");
+
+      if (!access_token || !refresh_token) {
+        alert("Token inválido");
+        router.replace("/login");
+        return;
+      }
+
+      // 🔥 cria sessão manualmente
+      const { error } = await supabase.auth.setSession({
         access_token,
         refresh_token,
       });
-    }
-  }
-}, []);
 
-  const handleUpdate = async () => {
-    setLoading(true);
+      if (error) {
+        alert("Erro ao validar sessão");
+        router.replace("/login");
+        return;
+      }
+
+      setLoading(false);
+    };
+
+    handleSession();
+  }, []);
+
+  const handleUpdatePassword = async () => {
+    if (!password) {
+      alert("Digite a nova senha");
+      return;
+    }
 
     const { error } = await supabase.auth.updateUser({
       password,
     });
 
-    setLoading(false);
-
     if (error) {
       alert(error.message);
-    } else {
-      alert("Senha atualizada com sucesso!");
-      window.location.href = "/login";
+      return;
     }
+
+    alert("Senha atualizada com sucesso!");
+    router.replace("/login");
   };
+
+  if (loading) {
+    return <p>Validando sessão...</p>;
+  }
 
   return (
     <div className="flex flex-col items-center justify-center h-screen gap-4">
       <h1 className="text-2xl font-bold">Nova senha</h1>
 
       <input
-        className="border p-2"
         type="password"
-        placeholder="Nova senha"
+        placeholder="Digite a nova senha"
+        className="border p-2"
         onChange={(e) => setPassword(e.target.value)}
       />
 
       <button
         className="bg-green-500 text-white px-4 py-2"
-        onClick={handleUpdate}
-        disabled={loading}
+        onClick={handleUpdatePassword}
       >
-        {loading ? "Salvando..." : "Atualizar senha"}
+        Atualizar senha
       </button>
     </div>
   );

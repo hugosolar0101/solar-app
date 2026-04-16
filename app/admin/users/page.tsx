@@ -14,14 +14,14 @@ export default function UsersAdmin() {
   const supabase = createClient();
 
   async function fetchData() {
-    const { data } = await supabase.from("users").select("*")
+    const { data } = await supabase.from("profiles").select("*")
     setUsers(data || [])
   }
 
   async function addUser() {
     if (!name || !email) return
 
-    await supabase.from("users").insert([
+    await supabase.from("profiles").insert([
       {
         name,
         email,
@@ -36,7 +36,7 @@ export default function UsersAdmin() {
   }
 
   async function deleteUser(id: string) {
-    await supabase.from("users").delete().eq("id", id)
+    await supabase.from("profiles").delete().eq("id", id)
     fetchData()
   }
 

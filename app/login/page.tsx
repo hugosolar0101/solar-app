@@ -8,10 +8,13 @@ export default function LoginPage() {
   const supabase = createClient();
   const router = useRouter();
 
+  const [isRegister, setIsRegister] = useState(false);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // 🔐 LOGIN
   const handleLogin = async () => {
     setLoading(true);
 
@@ -28,16 +31,10 @@ export default function LoginPage() {
 
     const user = data.user;
 
-    if (!user) {
-      setLoading(false);
-      alert("Erro ao autenticar usuário");
-      return;
-    }
-
     const { data: profile } = await supabase
       .from("profiles")
       .select("role")
-      .eq("id", user.id)
+      .eq("id", user?.id)
       .single();
 
     setLoading(false);
@@ -49,6 +46,52 @@ export default function LoginPage() {
     }
   };
 
+  // 🆕 CADASTRO
+  const handleRegister = async () => {
+    setLoading(true);
+
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+
+    if (error) {
+      setLoading(false);
+      alert(error.message);
+      return;
+    }
+
+    const user = data.user;
+
+    if (!user) {
+      setLoading(false);
+      alert("Erro ao criar usuário");
+      return;
+    }
+
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .insert([
+        {
+          id: user.id,
+          role: "user",
+        },
+      ]);
+
+    if (profileError) {
+      console.error(profileError);
+      alert("Erro ao criar perfil");
+      setLoading(false);
+      return;
+    }
+
+    setLoading(false);
+
+    alert("Conta criada com sucesso!");
+    router.replace("/dashboard");
+  };
+
+  // 🔑 RECUPERAR SENHA
   const handleResetPassword = async () => {
     if (!email) {
       alert("Digite seu email primeiro");
@@ -68,7 +111,9 @@ export default function LoginPage() {
 
   return (
     <div className="flex flex-col items-center justify-center h-screen gap-4">
-      <h1 className="text-2xl font-bold">Login</h1>
+      <h1 className="text-2xl font-bold">
+        {isRegister ? "Criar Conta" : "Login"}
+      </h1>
 
       <input
         className="border p-2"
@@ -86,18 +131,35 @@ export default function LoginPage() {
 
       <button
         className="bg-blue-500 text-white px-4 py-2"
-        onClick={handleLogin}
+        onClick={isRegister ? handleRegister : handleLogin}
         disabled={loading}
       >
-        {loading ? "Entrando..." : "Entrar"}
+        {loading
+          ? "Carregando..."
+          : isRegister
+          ? "Criar conta"
+          : "Entrar"}
       </button>
 
+      {/* 🔁 alternar login/cadastro */}
       <button
         className="text-sm text-blue-600 underline"
-        onClick={handleResetPassword}
+        onClick={() => setIsRegister(!isRegister)}
       >
-        Esqueci minha senha
+        {isRegister
+          ? "Já tem conta? Fazer login"
+          : "Não tem conta? Criar agora"}
       </button>
+
+      {/* 🔑 recuperar senha (SÓ no modo login) */}
+      {!isRegister && (
+        <button
+          className="text-sm text-blue-600 underline"
+          onClick={handleResetPassword}
+        >
+          Esqueci minha senha
+        </button>
+      )}
     </div>
   );
 }
